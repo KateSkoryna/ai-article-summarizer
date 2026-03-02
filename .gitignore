@@ -1,0 +1,17 @@
+# Local development
+.DS_Store
+.claude/
+
+# Chrome extension debugging
+*.pem
+*.crx
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
