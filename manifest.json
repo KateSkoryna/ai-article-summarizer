@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AI Article Summarizer",
   "version": "1.0.0",
-  "description": "Summarize web articles using Google Gemini AI and export to Word format",
+  "description": "Summarize web articles using Google Gemini AI and export to PDF format",
 
   "permissions": ["sidePanel", "storage", "activeTab", "scripting"],
 
