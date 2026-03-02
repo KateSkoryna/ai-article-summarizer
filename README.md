@@ -1,6 +1,6 @@
 # AI Article Summarizer - Chrome Extension
 
-A Chrome extension that uses Google Gemini AI to summarize web articles and export them to Word format.
+A Chrome extension that uses Google Gemini AI to summarize web articles and export them to PDF format.
 
 ## Installation Instructions
 
@@ -25,7 +25,7 @@ A Chrome extension that uses Google Gemini AI to summarize web articles and expo
 
 1. Click the extension icon in your toolbar
 2. The side panel should open on the right side
-3. You should see a "Phase 1 Complete" welcome message
+3. You should see the setup prompt if no API key is configured
 
 ### 3. Configure Your Gemini API Key
 
@@ -47,39 +47,14 @@ A Chrome extension that uses Google Gemini AI to summarize web articles and expo
 
 **Note:** The API key is stored securely in Chrome's encrypted storage and never leaves your browser except to make API calls to Google Gemini.
 
-### 4. Optional: Add Custom Icons
-
-The extension currently uses Chrome's default icon. To add custom icons:
-
-1. Create or download 4 PNG icons:
-   - 16x16 pixels (toolbar icon)
-   - 32x32 pixels (toolbar icon)
-   - 48x48 pixels (extension management)
-   - 128x128 pixels (Chrome Web Store)
-
-2. Save them in the `icons/` directory as:
-   - `icon16.png`
-   - `icon32.png`
-   - `icon48.png`
-   - `icon128.png`
-
-3. Uncomment the icons section in `manifest.json`
-
-4. Reload the extension in `chrome://extensions/`
-
-**Icon resources:**
-
-- [Flaticon](https://www.flaticon.com/) - Free icons
-- [Icons8](https://icons8.com/) - Free icons
-- [Favicon Generator](https://www.favicon-generator.org/) - Create icons from images
-
 ## Tech Stack
 
 - Chrome Manifest V3
 - Side Panel API
 - Vanilla JavaScript (no build tools)
-- Google Gemini API (coming in Phase 4)
-- docx library for Word export (coming in Phase 6)
+- Google Gemini API (gemini-2.5-flash model)
+- jsPDF library for PDF export
+- Mozilla Readability.js for article extraction
 
 ## Project Structure
 
@@ -105,16 +80,15 @@ ai-summarizer/
 - **content.js** - Extracts clean article content using Mozilla Readability.js
 - **sidepanel.js** - Main workflow: extract → summarize → display
 
-## Development Roadmap
+## Features
 
-- [x] **Phase 1:** Extension shell
-- [x] **Phase 2:** Options page & API key storage
-- [x] **Phase 3:** Article extraction
-- [x] **Phase 4:** Gemini API integration
-- [ ] **Phase 5:** UI polish
-- [x] **Phase 6:** Word export (.docx)
-- [ ] **Phase 7:** Error handling
-- [ ] **Phase 8:** Testing & documentation
+✅ **Extension Structure** - Chrome Manifest V3 with Side Panel API
+✅ **API Key Management** - Secure storage in Chrome's encrypted sync storage
+✅ **Article Extraction** - Clean content extraction using Mozilla Readability.js
+✅ **AI Summarization** - Powered by Google Gemini 2.5 Flash model
+✅ **PDF Export** - Professional formatted PDF documents with summary and metadata
+✅ **Error Handling** - Comprehensive error messages for all failure scenarios
+✅ **Responsive UI** - Clean, modern interface with loading states and status messages
 
 ## Troubleshooting
 
@@ -151,18 +125,18 @@ ai-summarizer/
 - Try a different article from a news site or blog
 - Cannot extract from Chrome system pages (chrome://)
 
-**Word export not working:**
+**PDF export not working:**
 
 - Make sure you generated a summary first
-- Check your Downloads folder for the .docx file
+- Check your Downloads folder for the .pdf file
 - Try again if the download was blocked by browser
-- File name format: `Article_Title_summary.docx`
+- File name format: `Article_Title_summary.pdf`
 
-**Downloaded Word file won't open:**
+**Downloaded PDF file won't open:**
 
-- Try opening with a different word processor
-- Make sure you have Microsoft Word, Google Docs, or LibreOffice installed
-- Check that the file has .docx extension
+- Try opening with a different PDF viewer
+- Make sure you have Adobe Reader, Preview (Mac), or Chrome installed
+- Check that the file has .pdf extension
 
 **Console errors:**
 
@@ -193,10 +167,10 @@ ai-summarizer/
    - Wait 2-5 seconds for AI processing
    - View your summary and key points!
 
-4. **Export to Word (NEW!):**
-   - Click "📥 Export to Word" button
-   - A .docx file downloads to your laptop
-   - Open in Microsoft Word, Google Docs, or any word processor
+4. **Export to PDF:**
+   - Click "📥 Export to PDF" button
+   - A .pdf file downloads to your laptop
+   - Open in any PDF viewer (Adobe Reader, Preview, Chrome)
 
 5. **Start a new article:**
    - Click "📄 New Article" to reset
@@ -204,50 +178,33 @@ ai-summarizer/
 
 ### What You Get
 
-- **Summary:** 3-5 sentence overview of the main points
-- **Key Points:** 5-7 bullet points highlighting important information
-- **Word Document:** Professional formatted .docx with article title, author, source, summary, bullet points, and metadata
-- **Powered by:** Google Gemini AI
+- **Summary:** Concise analytical summary (1500-2000 characters) focusing on what's new and important
+- **Structured Analysis:** Author & Source, Main Point, Key Insight, Implications, and Context sections
+- **PDF Document:** Professional formatted PDF with article title, author, source, summary, and metadata
+- **Powered by:** Google Gemini AI (gemini-2.5-flash model)
 
-## Word Export Feature
+## PDF Export Feature
 
-The extension generates professional Word documents (.docx) with:
+The extension generates professional PDF documents with:
 
-- **Article Title** (Heading 1)
-- **Metadata:** Author, source, URL
-- **Summary Section** with AI-generated overview
-- **Key Points Section** with formatted bullet points
-- **Footer:** Generation date and "Powered by Google Gemini AI"
+- **Article Title** (Bold, 18pt heading)
+- **Metadata:** Author, source, and article URL
+- **Summary Section** with AI-generated analytical overview
+- **Key Points Section** with formatted bullet points (when available)
+- **Footer:** Generation date and "Powered by Google Gemini AI" on every page
 
-**Document opens in:**
+**PDF Features:**
 
-- Microsoft Word (Windows/Mac)
-- Google Docs (upload to Drive)
-- LibreOffice Writer
-- Apple Pages
-- Any word processor that supports .docx
+- Clean typography and professional formatting
+- Automatic page breaks for long content
+- Markdown formatting converted to plain text
+- Works with any PDF viewer (Adobe Reader, Preview, Chrome, Edge)
+- Portable format - works on any device
 
-**File naming:** `Article_Title_summary.docx` (auto-sanitized)
-
-## Next Steps
-
-**Remaining phases:**
-
-- Phase 5: UI polish and refinements (optional)
-- Phase 7: Enhanced error handling
-- Phase 8: Final testing & comprehensive documentation
-
-**Completed:**
-
-- ✓ Chrome extension structure
-- ✓ API key management
-- ✓ Article extraction
-- ✓ AI-powered summarization
-- ✓ Word document export
+**File naming:** `Article_Title_summary.pdf` (auto-sanitized)
 
 ---
 
-**Version:** 1.0.0 (Phase 6)
+**Version:** 1.0.0
 **Powered by:** Google Gemini AI & Mozilla Readability
 **License:** MIT
-**Author:** Built with Claude Code
