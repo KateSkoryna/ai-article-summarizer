@@ -2,32 +2,6 @@
 
 A Chrome extension that uses Google Gemini AI to summarize web articles and export them to Word format.
 
-## Current Status: Phase 6 Complete ✓
-
-**Working features:**
-- ✓ Basic extension structure (Manifest V3)
-- ✓ Background service worker
-- ✓ Side panel integration
-- ✓ Extension loads in Chrome
-- ✓ Options page for API key storage
-- ✓ Secure API key management
-- ✓ Dynamic UI based on configuration status
-- ✓ Article extraction using Readability.js
-- ✓ Clean article content parsing
-- ✓ Display article metadata (title, author, length)
-- ✓ AI-powered summarization with Google Gemini
-- ✓ Summary generation (3-5 sentences)
-- ✓ Key points extraction (bullet points)
-- ✓ Error handling for API calls
-- ✓ **Word document export (.docx format)**
-- ✓ **Download summaries to your laptop**
-- ✓ **Formatted documents with metadata**
-
-**Coming next:**
-- UI polish and improvements (Phase 5)
-- Comprehensive error handling (Phase 7)
-- Final testing & documentation (Phase 8)
-
 ## Installation Instructions
 
 ### 1. Load Extension in Chrome
@@ -94,6 +68,7 @@ The extension currently uses Chrome's default icon. To add custom icons:
 4. Reload the extension in `chrome://extensions/`
 
 **Icon resources:**
+
 - [Flaticon](https://www.flaticon.com/) - Free icons
 - [Icons8](https://icons8.com/) - Free icons
 - [Favicon Generator](https://www.favicon-generator.org/) - Create icons from images
@@ -125,6 +100,7 @@ ai-summarizer/
 ```
 
 **Key Files:**
+
 - **utils.js** - Gemini API calls, prompt engineering, response parsing
 - **content.js** - Extracts clean article content using Mozilla Readability.js
 - **sidepanel.js** - Main workflow: extract → summarize → display
@@ -143,55 +119,66 @@ ai-summarizer/
 ## Troubleshooting
 
 **Extension doesn't appear:**
+
 - Make sure Developer mode is enabled in `chrome://extensions/`
 - Check that you selected the correct directory
 
 **Side panel doesn't open:**
+
 - Make sure you're using Chrome 114 or later (Side Panel API requirement)
 - Try reloading the extension
 
 **"Invalid API key" error:**
+
 - Go to Settings and verify your API key is correct
 - Get a new key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - Make sure the key starts with "AIza"
 
 **"Rate limit exceeded" error:**
+
 - Wait a few minutes before trying again
 - Gemini free tier has rate limits (60 requests/minute)
 
 **"Network error" or summarization fails:**
+
 - Check your internet connection
 - Verify the article was extracted successfully first
 - Try a shorter article (very long articles may exceed token limits)
 
 **Article extraction fails:**
+
 - Some pages may not be recognized as articles (homepages, search results)
 - Try a different article from a news site or blog
 - Cannot extract from Chrome system pages (chrome://)
 
 **Word export not working:**
+
 - Make sure you generated a summary first
 - Check your Downloads folder for the .docx file
 - Try again if the download was blocked by browser
 - File name format: `Article_Title_summary.docx`
 
 **Downloaded Word file won't open:**
+
 - Try opening with a different word processor
 - Make sure you have Microsoft Word, Google Docs, or LibreOffice installed
 - Check that the file has .docx extension
 
 **Console errors:**
+
 - Right-click the extension icon → "Inspect"
 - Check the Console tab for detailed error messages
 
 ## How to Use
 
 ### 1. Setup Your API Key (One-time)
+
 - Click the extension icon → Click "Open Settings"
 - Visit [Google AI Studio](https://makersuite.google.com/app/apikey) to get a free API key
 - Paste your API key and click "Save API Key"
 
 ### 2. Complete Workflow
+
 1. **Navigate to an article:**
    - Open any news article or blog post in Chrome
    - Examples: NYTimes, Medium, BBC News, tech blogs, documentation
@@ -216,6 +203,7 @@ ai-summarizer/
    - Navigate to another article and repeat
 
 ### What You Get
+
 - **Summary:** 3-5 sentence overview of the main points
 - **Key Points:** 5-7 bullet points highlighting important information
 - **Word Document:** Professional formatted .docx with article title, author, source, summary, bullet points, and metadata
@@ -224,6 +212,7 @@ ai-summarizer/
 ## Word Export Feature
 
 The extension generates professional Word documents (.docx) with:
+
 - **Article Title** (Heading 1)
 - **Metadata:** Author, source, URL
 - **Summary Section** with AI-generated overview
@@ -231,6 +220,7 @@ The extension generates professional Word documents (.docx) with:
 - **Footer:** Generation date and "Powered by Google Gemini AI"
 
 **Document opens in:**
+
 - Microsoft Word (Windows/Mac)
 - Google Docs (upload to Drive)
 - LibreOffice Writer
@@ -242,11 +232,13 @@ The extension generates professional Word documents (.docx) with:
 ## Next Steps
 
 **Remaining phases:**
+
 - Phase 5: UI polish and refinements (optional)
 - Phase 7: Enhanced error handling
 - Phase 8: Final testing & comprehensive documentation
 
 **Completed:**
+
 - ✓ Chrome extension structure
 - ✓ API key management
 - ✓ Article extraction
