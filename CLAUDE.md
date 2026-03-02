@@ -2,6 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Workflow Rules
+
+**IMPORTANT:**
+- Make code changes when the user requests them
+- **NEVER commit changes without explicit user permission**
+- When changes are ready, inform the user and wait for them to approve before committing
+- The user prefers to review changes before they are committed to git history
+- **DO NOT include co-author attribution** in commit messages
+- Keep commit messages concise and descriptive
+
+## Code Style Guidelines
+
+**Variable Naming:**
+- Use clear, self-explanatory variable names that describe their purpose
+- Avoid abbreviations unless universally understood (e.g., `url`, `api`)
+- Examples: `bulletPointsSection` instead of `bps`, `currentArticle` instead of `currArt`
+
+**Comments:**
+- Avoid unnecessary comments - code should be self-documenting
+- Only add comments when logic is genuinely complex or non-obvious
+- Never add comments that simply restate what the code does
+- Focus on writing clear code with descriptive names instead of relying on comments
+
 ## Development Commands
 
 ### Testing the Extension
