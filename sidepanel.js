@@ -8,6 +8,14 @@ const summarizeBtn = document.getElementById("summarize-btn");
 const clearBtn = document.getElementById("clear-btn");
 const newArticleBtn = document.getElementById("new-article-btn");
 const exportPdfBtn = document.getElementById("export-pdf-btn");
+const findVocabBtn = document.getElementById("find-vocab-btn");
+const vocabLanguageSelect = document.getElementById("vocab-language-select");
+const vocabCefrSelect = document.getElementById("vocab-cefr-select");
+const vocabDisplay = document.getElementById("vocab-display");
+const vocabDisplayMeta = document.getElementById("vocab-display-meta");
+const vocabWordList = document.getElementById("vocab-word-list");
+const exportVocabPdfBtn = document.getElementById("export-vocab-pdf-btn");
+const vocabNewArticleBtn = document.getElementById("vocab-new-article-btn");
 
 const noApiKeyStatus = document.getElementById("no-api-key-status");
 const mainContent = document.getElementById("main-content");
@@ -32,6 +40,7 @@ const bulletPoints = document.getElementById("bullet-points");
 // Store extracted article data
 let currentArticle = null;
 let currentSummary = null;
+let currentVocabulary = null;
 
 // Initialize on load
 document.addEventListener("DOMContentLoaded", initialize);
@@ -55,6 +64,15 @@ if (newArticleBtn) {
 }
 if (exportPdfBtn) {
   exportPdfBtn.addEventListener("click", exportToPDF);
+}
+if (findVocabBtn) {
+  findVocabBtn.addEventListener("click", findVocabulary);
+}
+if (exportVocabPdfBtn) {
+  exportVocabPdfBtn.addEventListener("click", exportVocabularyPDF);
+}
+if (vocabNewArticleBtn) {
+  vocabNewArticleBtn.addEventListener("click", startNewArticle);
 }
 
 // Initialize the side panel
@@ -124,7 +142,14 @@ async function extractArticle() {
   } catch (error) {
     console.error("Extract article error:", error);
     hideLoading();
-    showStatus(error.message, "error");
+    if (error.message.includes("Receiving end does not exist")) {
+      showStatus(
+        "Could not reach the page. Please refresh the tab and try again.",
+        "error",
+      );
+    } else {
+      showStatus(error.message, "error");
+    }
   }
 }
 
@@ -252,11 +277,264 @@ function formatMarkdownToHTML(text) {
   return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
 }
 
+// Find vocabulary words from current article
+async function findVocabulary() {
+  if (!currentArticle) {
+    showStatus(
+      "No article loaded. Please extract an article first.",
+      "warning",
+    );
+    return;
+  }
+
+  const targetLanguage = vocabLanguageSelect.value;
+  const cefrLevel = vocabCefrSelect.value;
+
+  if (!targetLanguage || !cefrLevel) {
+    showStatus(
+      "Please select both a target language and a CEFR level.",
+      "warning",
+    );
+    return;
+  }
+
+  try {
+    showLoading("Finding vocabulary words...");
+    hideStatus();
+
+    const apiKey = await getApiKey();
+    if (!apiKey) {
+      hideLoading();
+      showStatus(
+        "API key not found. Please configure your Gemini API key in settings.",
+        "error",
+      );
+      return;
+    }
+
+    const prompt = createVocabularyPrompt(
+      currentArticle.content,
+      targetLanguage,
+      cefrLevel,
+    );
+    const response = await callGeminiAPI(prompt, apiKey);
+    const items = parseVocabularyResponse(response);
+
+    if (!items) {
+      hideLoading();
+      showStatus(
+        "Could not parse vocabulary response. Please try again.",
+        "error",
+      );
+      return;
+    }
+
+    currentVocabulary = {
+      items,
+      language: targetLanguage,
+      cefrLevel,
+      articleTitle: currentArticle.title,
+      articleUrl: currentArticle.url,
+    };
+
+    hideLoading();
+    displayVocabulary(currentVocabulary);
+    showStatus("Vocabulary list generated!", "success");
+  } catch (error) {
+    console.error("Vocabulary error:", error);
+    hideLoading();
+    showStatus(`Error: ${error.message}`, "error");
+  }
+}
+
+// Display vocabulary word cards
+function displayVocabulary(vocabData) {
+  vocabDisplayMeta.textContent = `Language: ${vocabData.language} | Level: ${vocabData.cefrLevel} | ${vocabData.items.length} words`;
+
+  vocabWordList.innerHTML = "";
+  vocabData.items.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "vocab-word-card";
+    card.innerHTML = `
+      <div class="vocab-word">${item.word}<span class="vocab-level-badge">${vocabData.cefrLevel}</span></div>
+      <div class="vocab-translation">${item.translation}</div>
+      <div class="vocab-example">${item.example}</div>
+      <div class="vocab-example">${item.example_translation}</div>
+    `;
+    vocabWordList.appendChild(card);
+  });
+
+  articleDisplay.classList.add("hidden");
+  summaryDisplay.classList.add("hidden");
+  vocabDisplay.classList.remove("hidden");
+}
+
+// Export vocabulary list to PDF
+async function exportVocabularyPDF() {
+  if (!currentVocabulary || !currentArticle) {
+    showStatus(
+      "No vocabulary to export. Please generate a vocabulary list first.",
+      "warning",
+    );
+    return;
+  }
+
+  try {
+    showLoading("Generating Vocabulary PDF...");
+    hideStatus();
+
+    if (typeof window.jspdf === "undefined") {
+      throw new Error(
+        "PDF export library not loaded. Please reload the extension.",
+      );
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const maxWidth = pageWidth - margin * 2;
+    let yPosition = 20;
+
+    // Title
+    doc.setFontSize(18);
+    doc.setFont(undefined, "bold");
+    doc.setTextColor(0, 0, 0);
+    const titleLines = doc.splitTextToSize(
+      `Vocabulary: ${currentVocabulary.articleTitle}`,
+      maxWidth,
+    );
+    doc.text(titleLines, margin, yPosition);
+    yPosition += titleLines.length * 7 + 6;
+
+    // Language and level subtitle
+    doc.setFontSize(11);
+    doc.setFont(undefined, "italic");
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      `Language: ${currentVocabulary.language} | Level: ${currentVocabulary.cefrLevel}`,
+      margin,
+      yPosition,
+    );
+    yPosition += 7;
+
+    // Source URL
+    doc.setFontSize(9);
+    doc.setFont(undefined, "normal");
+    doc.setTextColor(26, 115, 232);
+    const urlLines = doc.splitTextToSize(
+      currentVocabulary.articleUrl,
+      maxWidth,
+    );
+    doc.text(urlLines, margin, yPosition);
+    yPosition += urlLines.length * 4 + 10;
+
+    // Horizontal rule
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 10;
+
+    // Word entries
+    currentVocabulary.items.forEach((item) => {
+      if (yPosition > 270) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      // Word + level badge right-aligned
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.setTextColor(32, 33, 36);
+      doc.text(item.word, margin, yPosition);
+
+      const badgeText = currentVocabulary.cefrLevel;
+      doc.setFontSize(10);
+      doc.setFont(undefined, "normal");
+      doc.setTextColor(21, 87, 176);
+      const badgeWidth = doc.getTextWidth(badgeText);
+      doc.text(badgeText, pageWidth - margin - badgeWidth, yPosition);
+      yPosition += 6;
+
+      // Translation
+      doc.setFontSize(11);
+      doc.setFont(undefined, "normal");
+      doc.setTextColor(26, 115, 232);
+      doc.text(item.translation, margin, yPosition);
+      yPosition += 6;
+
+      // Example sentence (original)
+      doc.setFontSize(10);
+      doc.setFont(undefined, "italic");
+      doc.setTextColor(95, 99, 104);
+      const exampleLines = doc.splitTextToSize(item.example, maxWidth);
+      exampleLines.forEach((line) => {
+        if (yPosition > 275) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        doc.text(line, margin, yPosition);
+        yPosition += 5;
+      });
+
+      // Example sentence (translation)
+      const exampleTranslationLines = doc.splitTextToSize(item.example_translation, maxWidth);
+      exampleTranslationLines.forEach((line) => {
+        if (yPosition > 275) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        doc.text(line, margin, yPosition);
+        yPosition += 5;
+      });
+
+      // Light separator line
+      yPosition += 3;
+      doc.setDrawColor(220, 220, 220);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 7;
+    });
+
+    // Footer on all pages
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(9);
+      doc.setFont(undefined, "italic");
+      doc.setTextColor(150, 150, 150);
+
+      const footerY = doc.internal.pageSize.getHeight() - 15;
+      const dateText = `Generated by AI Article Summarizer on ${new Date().toLocaleDateString(
+        "en-US",
+        { year: "numeric", month: "long", day: "numeric" },
+      )}`;
+      const dateWidth = doc.getTextWidth(dateText);
+      doc.text(dateText, (pageWidth - dateWidth) / 2, footerY);
+
+      const poweredText = "Powered by Google Gemini AI";
+      const poweredWidth = doc.getTextWidth(poweredText);
+      doc.text(poweredText, (pageWidth - poweredWidth) / 2, footerY + 5);
+    }
+
+    const filename = `${sanitizeFilename(currentVocabulary.articleTitle)}_vocab_${currentVocabulary.cefrLevel}_${currentVocabulary.language}.pdf`;
+    doc.save(filename);
+
+    hideLoading();
+    showStatus("Vocabulary PDF downloaded successfully!", "success");
+  } catch (error) {
+    console.error("Vocab export error:", error);
+    hideLoading();
+    showStatus(`Export failed: ${error.message}`, "error");
+  }
+}
+
 // Start a new article (reset everything)
 function startNewArticle() {
   currentArticle = null;
   currentSummary = null;
+  currentVocabulary = null;
   summaryDisplay.classList.add("hidden");
+  vocabDisplay.classList.add("hidden");
   extractSectionEl.classList.remove("hidden");
   hideStatus();
 }
