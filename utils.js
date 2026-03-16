@@ -240,6 +240,87 @@ function parseSummaryResponse(responseText) {
 }
 
 /**
+ * Create a vocabulary learning prompt for Gemini
+ * @param {string} articleText - The article content
+ * @param {string} targetLanguage - The language to translate words into
+ * @param {string} cefrLevel - The CEFR level (A1–C2)
+ * @returns {string} The formatted prompt
+ */
+function createVocabularyPrompt(articleText, targetLanguage, cefrLevel) {
+  const maxChars = 15000;
+  const truncatedText =
+    articleText.length > maxChars
+      ? articleText.substring(0, maxChars) + "...[truncated]"
+      : articleText;
+
+  const levelDescriptions = {
+    A1: "absolute beginner — very common everyday words only",
+    A2: "elementary — basic everyday vocabulary",
+    B1: "intermediate — moderately common words a learner would encounter",
+    B2: "upper intermediate — less common words requiring broader knowledge",
+    C1: "advanced — sophisticated, nuanced vocabulary",
+    C2: "mastery — highly sophisticated, rare, or domain-specific words",
+  };
+
+  const levelDescription = levelDescriptions[cefrLevel] || cefrLevel;
+
+  return `You are a language learning assistant. From the article below, extract 10–15 words (in the article's language) that match CEFR level ${cefrLevel} (${levelDescription}).
+
+For each word, include the grammatical article with the word itself if the article's language requires it (e.g. "das Haus" in German, "la maison" in French). Do the same for the ${targetLanguage} translation if that language requires articles.
+
+For each word, provide a ${targetLanguage} translation, an example sentence taken or adapted from the article (in the article's original language), and a ${targetLanguage} translation of that example sentence.
+
+Return ONLY a valid JSON array with no prose, no code fences, and no additional text. Each element must have exactly these four string fields: "word", "translation", "example", "example_translation".
+
+Example format:
+[{"word": "example","translation": "ejemplo","example": "This is an example sentence.","example_translation": "Esta es una oración de ejemplo."}]
+
+Article Content:
+${truncatedText}`;
+}
+
+/**
+ * Parse the Gemini vocabulary response into an array of vocab items
+ * @param {string} responseText - The raw response from Gemini
+ * @returns {Array<{word: string, translation: string, example: string}>|null} Parsed items or null on failure
+ */
+function parseVocabularyResponse(responseText) {
+  try {
+    // Extract the JSON array from anywhere in the response,
+    // handles code fences, leading prose, trailing notes, etc.
+    const match = responseText.match(/\[[\s\S]*\]/);
+    if (!match) {
+      console.error(
+        "No JSON array found in vocabulary response:",
+        responseText,
+      );
+      return null;
+    }
+
+    const parsed = JSON.parse(match[0]);
+
+    if (
+      !Array.isArray(parsed) ||
+      parsed.length === 0 ||
+      !parsed.every(
+        (item) =>
+          typeof item.word === "string" &&
+          typeof item.translation === "string" &&
+          typeof item.example === "string" &&
+          typeof item.example_translation === "string",
+      )
+    ) {
+      return null;
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error("Error parsing vocabulary response:", error);
+    return null;
+  }
+}
+
+/**
  * Extract a specific section from the response text (internal helper)
  * @param {string} text - The full response text
  * @param {string} sectionHeader - The section header to look for
