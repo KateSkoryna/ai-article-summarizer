@@ -1,0 +1,16 @@
+{
+  "name": "@ai-summarizer/source",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "build": "nx build extension",
+    "serve": "nx serve backend",
+    "dev:extension": "nx dev extension",
+    "dev:backend": "nx serve backend"
+  },
+  "devDependencies": {
+    "nx": "^19.0.0",
+    "typescript": "^5.3.0"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "AI Article Summarizer",
+  "version": "1.0.0",
+  "description": "Summarize web articles using Google Gemini AI and export to PDF format",
+
+  "permissions": ["sidePanel", "storage", "activeTab", "scripting"],
+
+  "host_permissions": ["<all_urls>"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+
+  "action": {
+    "default_title": "Summarize Article",
+    "default_icon": {
+      "16": "icons/ai.png",
+      "32": "icons/ai.png",
+      "48": "icons/ai.png",
+      "128": "icons/ai.png"
+    }
+  },
+
+  "icons": {
+    "16": "icons/ai.png",
+    "32": "icons/ai.png",
+    "48": "icons/ai.png",
+    "128": "icons/ai.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["Readability.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

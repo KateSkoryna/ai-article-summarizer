@@ -1,6 +1,17 @@
+# Build output
+dist/
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.example
+
 # Local development
 .DS_Store
 .claude/
+.nx/
 
 # Chrome extension debugging
 *.pem
@@ -12,6 +23,8 @@
 *.swp
 *.swo
 *~
+PLAN.md
+ERRORS.md
 
 # Logs
 *.log
