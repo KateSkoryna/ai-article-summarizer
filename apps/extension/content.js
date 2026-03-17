@@ -1,6 +1,3 @@
-// Content script for article extraction
-// This script runs on all web pages and extracts article content using Readability.js
-
 // Listen for messages from the side panel
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extractArticle") {
@@ -19,7 +16,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Extract article content using Readability
 async function extractArticleContent() {
   try {
-    // Readability.js is now loaded via manifest.json, no need to load dynamically
 
     // Clone the document to avoid modifying the original page
     const documentClone = document.cloneNode(true);

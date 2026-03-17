@@ -2620,7 +2620,4 @@ Readability.prototype = {
   },
 };
 
-if (typeof module === "object") {
-  /* global module */
-  module.exports = Readability;
-}
+if (typeof window !== "undefined") { window.Readability = Readability; }
