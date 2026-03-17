@@ -139,12 +139,36 @@ Article Content:
 ${truncatedText}`;
 }
 
+function extractJsonArray(text: string): string | null {
+  const stripped = text.replace(/```(?:json)?\s*|\s*```/g, '');
+  const start = stripped.indexOf('[');
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = start; i < stripped.length; i++) {
+    const char = stripped[i];
+    if (escape) { escape = false; continue; }
+    if (char === '\\' && inString) { escape = true; continue; }
+    if (char === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (char === '[') depth++;
+    else if (char === ']') {
+      depth--;
+      if (depth === 0) return stripped.substring(start, i + 1);
+    }
+  }
+  return null;
+}
+
 export function parseVocabularyResponse(responseText: string): VocabItem[] | null {
   try {
-    const match = responseText.match(/\[[\s\S]*\]/);
-    if (!match) return null;
+    const jsonStr = extractJsonArray(responseText);
+    if (!jsonStr) return null;
 
-    const parsed = JSON.parse(match[0]) as unknown[];
+    const parsed = JSON.parse(jsonStr) as unknown[];
 
     if (
       !Array.isArray(parsed) ||
