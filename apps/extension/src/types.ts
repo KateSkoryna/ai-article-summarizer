@@ -6,10 +6,12 @@ export interface Article {
   length: number;
   siteName: string;
   url: string;
+  language: string;
 }
 
 export interface Summary {
   summary: string;
+  originalSummary?: string;
   bulletPoints: string[];
   articleTitle: string;
   articleUrl: string;

@@ -3,15 +3,15 @@ import type { Article } from '../../types';
 
 interface Props {
   article: Article;
-  onSummarize: () => void;
-  onFindVocab: (language: string, cefrLevel: string) => void;
+  onTranslateAndSummarize: (language: string, cefrLevel: string) => void;
   onClear: () => void;
 }
 
 const LANGUAGES = [
-  'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese',
-  'Dutch', 'Russian', 'Japanese', 'Chinese (Simplified)', 'Korean',
-  'Arabic', 'Hindi', 'Turkish', 'Polish', 'Swedish',
+  'Arabic', 'Chinese (Simplified)', 'Dutch', 'English', 'French',
+  'German', 'Hindi', 'Italian', 'Japanese', 'Korean',
+  'Polish', 'Portuguese', 'Russian', 'Spanish', 'Swedish',
+  'Turkish', 'Ukrainian',
 ];
 
 const CEFR_LEVELS = [
@@ -23,7 +23,7 @@ const CEFR_LEVELS = [
   { value: 'C2', label: 'C2 – Mastery' },
 ];
 
-export function ArticleDisplay({ article, onSummarize, onFindVocab, onClear }: Props) {
+export function ArticleDisplay({ article, onTranslateAndSummarize, onClear }: Props) {
   const [targetLanguage, setTargetLanguage] = useState('');
   const [cefrLevel, setCefrLevel] = useState('');
 
@@ -58,9 +58,12 @@ export function ArticleDisplay({ article, onSummarize, onFindVocab, onClear }: P
       </div>
 
       <div className="button-group">
-        <button className="btn-primary" onClick={onSummarize}>✨ Summarize</button>
-        <button className="btn-primary" onClick={() => onFindVocab(targetLanguage, cefrLevel)}>
-          📚 Find Vocabulary
+        <button
+          className="btn-primary"
+          onClick={() => onTranslateAndSummarize(targetLanguage, cefrLevel)}
+          disabled={!targetLanguage || !cefrLevel}
+        >
+          ✨ Translate &amp; Summarize
         </button>
         <button className="btn-secondary" onClick={onClear}>🗑️ Clear</button>
       </div>

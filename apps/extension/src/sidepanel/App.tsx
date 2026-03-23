@@ -7,15 +7,14 @@ import {
   createVocabularyPrompt,
   parseVocabularyResponse,
 } from '../utils/api';
-import { exportSummaryPDF, exportVocabularyPDF } from '../utils/pdf';
+import { exportSummaryPDF, exportVocabularyPDF, exportBothPDF } from '../utils/pdf';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { StatusMessage } from './components/StatusMessage';
 import { ArticleExtract } from './components/ArticleExtract';
 import { ArticleDisplay } from './components/ArticleDisplay';
-import { SummaryDisplay } from './components/SummaryDisplay';
-import { VocabularyDisplay } from './components/VocabularyDisplay';
+import { CombinedDisplay } from './components/CombinedDisplay';
 
-type AppView = 'extract' | 'article' | 'summary' | 'vocabulary';
+type AppView = 'extract' | 'article' | 'combined';
 type StatusType = 'success' | 'error' | 'warning' | 'info';
 
 interface Status {
@@ -81,59 +80,38 @@ export function App() {
     }
   }
 
-  async function summarizeArticle() {
-    if (!currentArticle) {
-      showStatus('No article to summarize. Please extract an article first.', 'warning');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setLoadingText('Generating AI summary...');
-      hideStatus();
-
-      const prompt = createSummaryPrompt(currentArticle.content, currentArticle.title);
-      const responseText = await callBackendAPI('summarize', prompt);
-      const parsed = parseSummaryResponse(responseText);
-
-      const summary: Summary = {
-        summary: parsed.summary,
-        bulletPoints: parsed.bulletPoints,
-        articleTitle: currentArticle.title,
-        articleUrl: currentArticle.url,
-      };
-
-      setCurrentSummary(summary);
-      setView('summary');
-      showStatus('Summary generated successfully!', 'success');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      showStatus(`Error: ${message}`, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function findVocabulary(targetLanguage: string, cefrLevel: string) {
+  async function translateAndSummarize(targetLanguage: string, cefrLevel: string) {
     if (!currentArticle) {
       showStatus('No article loaded. Please extract an article first.', 'warning');
       return;
     }
 
-    if (!targetLanguage || !cefrLevel) {
-      showStatus('Please select both a target language and a CEFR level.', 'warning');
-      return;
-    }
-
     try {
       setLoading(true);
-      setLoadingText('Finding vocabulary words...');
+      setLoadingText('Generating summary and vocabulary...');
       hideStatus();
 
-      const prompt = createVocabularyPrompt(currentArticle.content, targetLanguage, cefrLevel);
-      const responseText = await callBackendAPI('vocabulary', prompt);
-      const items = parseVocabularyResponse(responseText);
+      const summaryPrompt = createSummaryPrompt(currentArticle.content, currentArticle.title, targetLanguage);
+      const originalSummaryPrompt = createSummaryPrompt(currentArticle.content, currentArticle.title, "the article's original language");
+      const vocabPrompt = createVocabularyPrompt(currentArticle.content, targetLanguage, cefrLevel);
 
+      const [summaryText, originalSummaryText, vocabText] = await Promise.all([
+        callBackendAPI('summarize', summaryPrompt),
+        callBackendAPI('summarize', originalSummaryPrompt),
+        callBackendAPI('vocabulary', vocabPrompt),
+      ]);
+
+      const parsed = parseSummaryResponse(summaryText);
+      const originalParsed = parseSummaryResponse(originalSummaryText);
+      const summary: Summary = {
+        summary: parsed.summary,
+        originalSummary: originalParsed.summary,
+        bulletPoints: parsed.bulletPoints,
+        articleTitle: currentArticle.title,
+        articleUrl: currentArticle.url,
+      };
+
+      const items = parseVocabularyResponse(vocabText);
       if (!items) {
         showStatus('Could not parse vocabulary response. Please try again.', 'error');
         return;
@@ -147,9 +125,10 @@ export function App() {
         articleUrl: currentArticle.url,
       };
 
+      setCurrentSummary(summary);
       setCurrentVocabulary(vocabData);
-      setView('vocabulary');
-      showStatus('Vocabulary list generated!', 'success');
+      setView('combined');
+      showStatus('Summary and vocabulary generated!', 'success');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       showStatus(`Error: ${message}`, 'error');
@@ -167,7 +146,7 @@ export function App() {
     try {
       setLoading(true);
       setLoadingText('Generating PDF document...');
-      await exportSummaryPDF(currentSummary, currentArticle);
+      await exportSummaryPDF(currentSummary, currentArticle, currentVocabulary?.language ?? '');
       showStatus('PDF document downloaded successfully!', 'success');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -188,6 +167,25 @@ export function App() {
       setLoadingText('Generating Vocabulary PDF...');
       await exportVocabularyPDF(currentVocabulary);
       showStatus('Vocabulary PDF downloaded successfully!', 'success');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      showStatus(`Export failed: ${message}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleExportBothPDF() {
+    if (!currentSummary || !currentArticle || !currentVocabulary) {
+      showStatus('No content to export. Please generate a summary first.', 'warning');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setLoadingText('Generating PDF...');
+      await exportBothPDF(currentSummary, currentArticle, currentVocabulary);
+      showStatus('PDF downloaded successfully!', 'success');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       showStatus(`Export failed: ${message}`, 'error');
@@ -226,24 +224,18 @@ export function App() {
       {!loading && view === 'article' && currentArticle && (
         <ArticleDisplay
           article={currentArticle}
-          onSummarize={summarizeArticle}
-          onFindVocab={findVocabulary}
+          onTranslateAndSummarize={translateAndSummarize}
           onClear={clearArticle}
         />
       )}
 
-      {!loading && view === 'summary' && currentSummary && (
-        <SummaryDisplay
+      {!loading && view === 'combined' && currentSummary && currentVocabulary && (
+        <CombinedDisplay
           summary={currentSummary}
-          onExportPDF={handleExportSummaryPDF}
-          onNewArticle={startNewArticle}
-        />
-      )}
-
-      {!loading && view === 'vocabulary' && currentVocabulary && (
-        <VocabularyDisplay
           vocabData={currentVocabulary}
-          onExportPDF={handleExportVocabPDF}
+          onExportSummaryPDF={handleExportSummaryPDF}
+          onExportVocabPDF={handleExportVocabPDF}
+          onExportBothPDF={handleExportBothPDF}
           onNewArticle={startNewArticle}
         />
       )}

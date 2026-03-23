@@ -1,11 +1,15 @@
 import type { VocabItem } from '../types';
 
-const BACKEND_URL = 'http://localhost:3000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const EXTENSION_TOKEN = import.meta.env.VITE_EXTENSION_TOKEN || '';
 
 export async function callBackendAPI(endpoint: string, prompt: string): Promise<string> {
   const response = await fetch(`${BACKEND_URL}/${endpoint}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Extension-Token': EXTENSION_TOKEN,
+    },
     body: JSON.stringify({ prompt }),
   });
 
@@ -21,46 +25,32 @@ export async function callBackendAPI(endpoint: string, prompt: string): Promise<
   return data.text;
 }
 
-export function createSummaryPrompt(articleText: string, articleTitle: string): string {
+function truncateArticle(text: string): string {
   const maxChars = 15000;
-  const truncatedText =
-    articleText.length > maxChars
-      ? articleText.substring(0, maxChars) + '...[truncated]'
-      : articleText;
+  return text.length > maxChars ? text.substring(0, maxChars) + '...[truncated]' : text;
+}
 
-  return `Create a concise summary of this article IN ENGLISH (1500-2000 characters).
+export function createSummaryPrompt(articleText: string, articleTitle: string, targetLanguage = 'English'): string {
+  const truncatedText = truncateArticle(articleText);
+
+  return `Summarize this article IN ${targetLanguage.toUpperCase()} in exactly 800 characters or less.
 
 Article Title: ${articleTitle}
 Article Content:
 ${truncatedText}
 
-CRITICAL INSTRUCTIONS:
-- Write a SUMMARY, not a translation
-- Focus on what's NEW, SURPRISING, or IMPORTANT
-- Do NOT repeat obvious facts or context everyone knows
-- Do NOT use quotes unless absolutely necessary
-- Identify ONE specific crucial fact or insight in one sentence
-- Be analytical, not descriptive
-- Keep it 1500-2000 characters total
-
 FORMAT:
 
 AUTHOR & SOURCE:
-[One line: Author name (if mentioned) and publication, e.g., "Christina Nagel, ARD-Hauptstadtstudio" or just "Tagesschau.de"]
+[Author name and publication in one line]
 
 MAIN POINT:
-[2-3 sentences: What is the core message? Why does this matter NOW?]
+[2-3 sentences: core message and why it matters now]
 
 KEY INSIGHT:
-[1 specific crucial fact or development that stands out - be concrete with numbers, names, or specific events]
+[1 sentence: the most concrete or surprising fact — include numbers, names, or specific events]
 
-IMPLICATIONS:
-[2-3 sentences: What does this mean? What are the consequences or significance?]
-
-CONTEXT (if relevant):
-[1-2 sentences: Only if there's essential background needed to understand the significance]
-
-Remember: Be concise, analytical, and focus on what's NOT obvious.`;
+Be analytical and focus on what is new or non-obvious. Do not translate word for word.`;
 }
 
 export function parseSummaryResponse(responseText: string): { summary: string; bulletPoints: string[] } {
@@ -107,11 +97,7 @@ export function createVocabularyPrompt(
   targetLanguage: string,
   cefrLevel: string,
 ): string {
-  const maxChars = 15000;
-  const truncatedText =
-    articleText.length > maxChars
-      ? articleText.substring(0, maxChars) + '...[truncated]'
-      : articleText;
+  const truncatedText = truncateArticle(articleText);
 
   const levelDescriptions: Record<string, string> = {
     A1: 'absolute beginner — very common everyday words only',
@@ -124,7 +110,9 @@ export function createVocabularyPrompt(
 
   const levelDescription = levelDescriptions[cefrLevel] || cefrLevel;
 
-  return `You are a language learning assistant. From the article below, extract 10–15 words (in the article's language) that match CEFR level ${cefrLevel} (${levelDescription}).
+  return `You are a language learning assistant. From the article below, extract exactly 15 words (in the article's language) that match CEFR level ${cefrLevel} (${levelDescription}).
+
+The 15 words must include: 5–7 nouns, 3–5 verbs, and 3–5 adjectives.
 
 For each word, include the grammatical article with the word itself if the article's language requires it (e.g. "das Haus" in German, "la maison" in French). Do the same for the ${targetLanguage} translation if that language requires articles.
 
@@ -165,27 +153,48 @@ function extractJsonArray(text: string): string | null {
 
 export function parseVocabularyResponse(responseText: string): VocabItem[] | null {
   try {
-    const jsonStr = extractJsonArray(responseText);
-    if (!jsonStr) return null;
+    const raw = responseText.trim();
 
-    const parsed = JSON.parse(jsonStr) as unknown[];
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      const jsonStr = extractJsonArray(raw);
+      if (!jsonStr) {
+        console.error('parseVocabularyResponse: no JSON found. Response start:', raw.substring(0, 300));
+        return null;
+      }
+      parsed = JSON.parse(jsonStr);
+    }
 
-    if (
-      !Array.isArray(parsed) ||
-      parsed.length === 0 ||
-      !parsed.every(
-        (item) =>
-          typeof (item as VocabItem).word === 'string' &&
-          typeof (item as VocabItem).translation === 'string' &&
-          typeof (item as VocabItem).example === 'string' &&
-          typeof (item as VocabItem).example_translation === 'string',
-      )
-    ) {
+    const items: unknown[] = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray((parsed as Record<string, unknown>).items)
+        ? (parsed as Record<string, unknown>).items as unknown[]
+        : [];
+
+    if (items.length === 0) {
+      console.error('parseVocabularyResponse: empty array. Parsed:', parsed);
       return null;
     }
 
-    return parsed as VocabItem[];
-  } catch {
+    const validItems = items
+      .filter((item) => typeof (item as VocabItem).word === 'string' && typeof (item as VocabItem).translation === 'string')
+      .map((item) => ({
+        word: (item as VocabItem).word,
+        translation: (item as VocabItem).translation,
+        example: (item as VocabItem).example ?? '',
+        example_translation: (item as VocabItem).example_translation ?? '',
+      }));
+
+    if (validItems.length === 0) {
+      console.error('parseVocabularyResponse: no valid items. First item:', items[0]);
+      return null;
+    }
+
+    return validItems;
+  } catch (e) {
+    console.error('parseVocabularyResponse error:', e, 'Response:', responseText.substring(0, 300));
     return null;
   }
 }
