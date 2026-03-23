@@ -1,13 +1,24 @@
 import { jsPDF } from 'jspdf';
 import type { Summary, Article, VocabData } from '../types';
 
-function sanitizeFilename(filename: string): string {
-  return filename
-    .replace(/[^a-z0-9\s-]/gi, '_')
-    .replace(/\s+/g, '_')
-    .replace(/_+/g, '_')
-    .substring(0, 50)
-    .replace(/^_|_$/g, '');
+function toLangCode(language: string): string {
+  const overrides: Record<string, string> = {
+    'Portuguese': 'pt',
+    'Polish': 'pl',
+    'Chinese (Simplified)': 'zh',
+    'Spanish': 'es',
+    'Swedish': 'sv',
+  };
+  return overrides[language] ?? language.substring(0, 2).toLowerCase();
+}
+
+function shortDate(): string {
+  const d = new Date();
+  return [
+    String(d.getDate()).padStart(2, '0'),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getFullYear()).substring(2),
+  ].join('-');
 }
 
 function addFooter(doc: jsPDF, pageWidth: number): void {
@@ -33,15 +44,12 @@ function addFooter(doc: jsPDF, pageWidth: number): void {
   }
 }
 
-export async function exportSummaryPDF(summary: Summary, article: Article): Promise<void> {
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 15;
-  const maxWidth = pageWidth - margin * 2;
-  let y = 20;
+function addArticleHeader(doc: jsPDF, article: Article, margin: number, maxWidth: number, startY: number): number {
+  let y = startY;
 
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
   const titleLines = doc.splitTextToSize(article.title, maxWidth);
   doc.text(titleLines, margin, y);
   y += titleLines.length * 7 + 8;
@@ -53,63 +61,148 @@ export async function exportSummaryPDF(summary: Summary, article: Article): Prom
   y += 6;
 
   doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
   doc.setTextColor(26, 115, 232);
   const urlLines = doc.splitTextToSize(article.url, maxWidth);
   doc.text(urlLines, margin, y);
   y += urlLines.length * 4 + 10;
 
+  return y;
+}
+
+function addVocabItems(doc: jsPDF, vocabData: VocabData, margin: number, maxWidth: number, pageWidth: number, startY: number): number {
+  let y = startY;
+
+  vocabData.items.forEach((item) => {
+    if (y > 270) { doc.addPage(); y = 20; }
+
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(32, 33, 36);
+    doc.text(item.word, margin, y);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(21, 87, 176);
+    const badgeWidth = doc.getTextWidth(vocabData.cefrLevel);
+    doc.text(vocabData.cefrLevel, pageWidth - margin - badgeWidth, y);
+    y += 6;
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(26, 115, 232);
+    doc.text(item.translation, margin, y);
+    y += 6;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(95, 99, 104);
+
+    const exampleLines = doc.splitTextToSize(item.example, maxWidth);
+    exampleLines.forEach((line: string) => {
+      if (y > 275) { doc.addPage(); y = 20; }
+      doc.text(line, margin, y);
+      y += 5;
+    });
+
+    const translationLines = doc.splitTextToSize(item.example_translation, maxWidth);
+    translationLines.forEach((line: string) => {
+      if (y > 275) { doc.addPage(); y = 20; }
+      doc.text(line, margin, y);
+      y += 5;
+    });
+
+    y += 3;
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 7;
+  });
+
+  return y;
+}
+
+function addSummarySection(doc: jsPDF, title: string, text: string, margin: number, maxWidth: number, startY: number): number {
+  let y = startY;
+  if (y > 250) { doc.addPage(); y = 20; }
+
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('Summary', margin, y);
+  doc.text(title, margin, y);
   y += 8;
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(51, 51, 51);
 
-  const cleanSummary = summary.summary.replace(/\*\*(.*?)\*\*/g, '$1');
-  const summaryLines = doc.splitTextToSize(cleanSummary, maxWidth);
-  summaryLines.forEach((line: string) => {
+  const clean = text.replace(/\*\*(.*?)\*\*/g, '$1');
+  const lines = doc.splitTextToSize(clean, maxWidth);
+  lines.forEach((line: string) => {
     if (y > 270) { doc.addPage(); y = 20; }
     doc.text(line, margin, y);
     y += 6;
   });
 
-  y += 8;
+  return y + 8;
+}
 
-  if (summary.bulletPoints.length > 0) {
-    if (y > 250) { doc.addPage(); y = 20; }
+export async function exportSummaryPDF(summary: Summary, article: Article, targetLanguage: string): Promise<void> {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+  const maxWidth = pageWidth - margin * 2;
 
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Key Points', margin, y);
-    y += 8;
+  let y = addArticleHeader(doc, article, margin, maxWidth, 20);
 
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(51, 51, 51);
-
-    summary.bulletPoints.forEach((point) => {
-      const cleanPoint = point.replace(/\*\*(.*?)\*\*/g, '$1');
-      const bulletLines = doc.splitTextToSize(cleanPoint, maxWidth - 5);
-      bulletLines.forEach((line: string, index: number) => {
-        if (y > 275) { doc.addPage(); y = 20; }
-        if (index === 0) {
-          doc.text('•', margin, y);
-          doc.text(line, margin + 5, y);
-        } else {
-          doc.text(line, margin + 5, y);
-        }
-        y += 6;
-      });
-      y += 2;
-    });
+  if (summary.originalSummary) {
+    y = addSummarySection(doc, 'Original Summary', summary.originalSummary, margin, maxWidth, y);
   }
+  addSummarySection(doc, `Summary (${targetLanguage})`, summary.summary, margin, maxWidth, y);
 
   addFooter(doc, pageWidth);
-  doc.save(`${sanitizeFilename(article.title)}_summary.pdf`);
+
+  const origCode = article.language ? article.language.substring(0, 2).toLowerCase() : 'orig';
+  doc.save(`summary.${origCode}.${toLangCode(targetLanguage)}.${shortDate()}.pdf`);
+}
+
+export async function exportBothPDF(summary: Summary, article: Article, vocabData: VocabData): Promise<void> {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+  const maxWidth = pageWidth - margin * 2;
+
+  let y = addArticleHeader(doc, article, margin, maxWidth, 20);
+
+  if (summary.originalSummary) {
+    y = addSummarySection(doc, 'Original Summary', summary.originalSummary, margin, maxWidth, y);
+  }
+  addSummarySection(doc, `Summary (${vocabData.language})`, summary.summary, margin, maxWidth, y);
+
+  doc.addPage();
+  y = 20;
+
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text('Vocabulary', margin, y);
+  y += 8;
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Language: ${vocabData.language} | Level: ${vocabData.cefrLevel}`, margin, y);
+  y += 10;
+
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+
+  addVocabItems(doc, vocabData, margin, maxWidth, pageWidth, y);
+
+  addFooter(doc, pageWidth);
+
+  const origCode = article.language ? article.language.substring(0, 2).toLowerCase() : 'orig';
+  doc.save(`summary+vocab.${origCode}.${toLangCode(vocabData.language)}.${vocabData.cefrLevel.toLowerCase()}.${shortDate()}.pdf`);
 }
 
 export async function exportVocabularyPDF(vocabData: VocabData): Promise<void> {
@@ -143,52 +236,8 @@ export async function exportVocabularyPDF(vocabData: VocabData): Promise<void> {
   doc.line(margin, y, pageWidth - margin, y);
   y += 10;
 
-  vocabData.items.forEach((item) => {
-    if (y > 270) { doc.addPage(); y = 20; }
-
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(32, 33, 36);
-    doc.text(item.word, margin, y);
-
-    const badgeText = vocabData.cefrLevel;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(21, 87, 176);
-    const badgeWidth = doc.getTextWidth(badgeText);
-    doc.text(badgeText, pageWidth - margin - badgeWidth, y);
-    y += 6;
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(26, 115, 232);
-    doc.text(item.translation, margin, y);
-    y += 6;
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(95, 99, 104);
-
-    const exampleLines = doc.splitTextToSize(item.example, maxWidth);
-    exampleLines.forEach((line: string) => {
-      if (y > 275) { doc.addPage(); y = 20; }
-      doc.text(line, margin, y);
-      y += 5;
-    });
-
-    const translationLines = doc.splitTextToSize(item.example_translation, maxWidth);
-    translationLines.forEach((line: string) => {
-      if (y > 275) { doc.addPage(); y = 20; }
-      doc.text(line, margin, y);
-      y += 5;
-    });
-
-    y += 3;
-    doc.setDrawColor(220, 220, 220);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 7;
-  });
+  addVocabItems(doc, vocabData, margin, maxWidth, pageWidth, y);
 
   addFooter(doc, pageWidth);
-  doc.save(`${sanitizeFilename(vocabData.articleTitle)}_vocab_${vocabData.cefrLevel}_${vocabData.language}.pdf`);
+  doc.save(`vocab.${toLangCode(vocabData.language)}.${vocabData.cefrLevel.toLowerCase()}.${shortDate()}.pdf`);
 }
