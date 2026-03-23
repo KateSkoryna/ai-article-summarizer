@@ -13,7 +13,12 @@ vocabularyRouter.post('/', apiLimiter, async (req, res) => {
       return;
     }
 
-    const text = await callGeminiAPI(prompt);
+    if (prompt.length > 20000) {
+      res.status(400).json({ error: 'Prompt too long' });
+      return;
+    }
+
+    const text = await callGeminiAPI(prompt, true);
     res.json({ text });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal server error';

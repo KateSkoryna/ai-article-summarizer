@@ -13,6 +13,11 @@ summarizeRouter.post('/', apiLimiter, async (req, res) => {
       return;
     }
 
+    if (prompt.length > 20000) {
+      res.status(400).json({ error: 'Prompt too long' });
+      return;
+    }
+
     const text = await callGeminiAPI(prompt);
     res.json({ text });
   } catch (error: unknown) {
