@@ -1,4 +1,3 @@
-// Listen for messages from the side panel
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extractArticle") {
     extractArticleContent()
@@ -13,14 +12,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Extract article content using Readability
 async function extractArticleContent() {
   try {
-
-    // Clone the document to avoid modifying the original page
     const documentClone = document.cloneNode(true);
 
-    // Create a new Readability instance and parse the content
     const reader = new Readability(documentClone, {
       debug: false,
       charThreshold: 100,
@@ -36,7 +31,6 @@ async function extractArticleContent() {
       };
     }
 
-    // Validate article content
     if (!article.textContent || article.textContent.trim().length < 100) {
       return {
         success: false,
@@ -45,7 +39,6 @@ async function extractArticleContent() {
       };
     }
 
-    // Return extracted article data
     return {
       success: true,
       data: {
@@ -57,6 +50,7 @@ async function extractArticleContent() {
         length: article.length,
         siteName: article.siteName || extractDomain(window.location.href),
         url: window.location.href,
+        language: document.documentElement.lang || '',
         publishedTime: article.publishedTime || null,
       },
     };
@@ -69,7 +63,6 @@ async function extractArticleContent() {
   }
 }
 
-// Extract domain from URL
 function extractDomain(url) {
   try {
     const urlObj = new URL(url);
@@ -79,5 +72,4 @@ function extractDomain(url) {
   }
 }
 
-// Log that content script is loaded
 console.log("AI Article Summarizer: Content script loaded");
