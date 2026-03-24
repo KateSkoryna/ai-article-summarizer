@@ -29,7 +29,12 @@ export function App() {
   }
 
   const handleSummaryReady = useCallback(
-    (summary: Summary) => setCurrentSummary(summary),
+    (incoming: Summary) =>
+      setCurrentSummary((prev) => ({
+        ...incoming,
+        summary: incoming.summary || prev?.summary || "",
+        originalSummary: incoming.originalSummary ?? prev?.originalSummary,
+      })),
     [],
   );
   const handleVocabReady = useCallback(
