@@ -1,4 +1,4 @@
-# AI Article Summarizer
+# Lexentio
 
 Chrome extension that summarizes web articles using AI and extracts vocabulary for language learning. No API key needed — the backend is hosted for you.
 
@@ -6,7 +6,7 @@ Chrome extension that summarizes web articles using AI and extracts vocabulary f
 
 **Requirements:** Chrome 114 or later
 
-1. Download the latest `extension.zip` from the [Releases page](../../releases)
+1. **[Download lexentio.zip](https://github.com/KateSkoryna/ai-article-summarizer/releases/latest/download/lexentio.zip)**
 2. Unzip the file
 3. Go to `chrome://extensions/` and enable **Developer mode** (top-right toggle)
 4. Click **Load unpacked** and select the unzipped folder
@@ -104,11 +104,19 @@ Or create `apps/extension/.env` (gitignored) with those values and run `nx build
 ### Create a GitHub Release
 
 ```bash
-cd apps/extension/dist
-zip -r ../../../extension.zip .
+cd apps/extension
+npm run build
+cd dist && zip -r ../lexentio.zip . && cd ..
 ```
 
-Upload `extension.zip` as a release asset on GitHub. Users download, unzip, and load unpacked.
+Then create the release:
+
+```bash
+gh release create v1.0.0 lexentio.zip --title "Lexentio v1.0.0" --notes "Initial release"
+```
+
+Users get a direct download link:
+`https://github.com/KateSkoryna/ai-article-summarizer/releases/latest/download/lexentio.zip`
 
 ### Endpoint Contract
 
