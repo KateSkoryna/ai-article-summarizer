@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import type { Article } from '../../types';
+import { useState } from "react";
+import type { Article } from "../../types";
+import { Button } from "./Button";
 
 interface Props {
   article: Article;
@@ -8,24 +9,41 @@ interface Props {
 }
 
 const LANGUAGES = [
-  'Arabic', 'Chinese (Simplified)', 'Dutch', 'English', 'French',
-  'German', 'Hindi', 'Italian', 'Japanese', 'Korean',
-  'Polish', 'Portuguese', 'Russian', 'Spanish', 'Swedish',
-  'Turkish', 'Ukrainian',
+  "Arabic",
+  "Chinese (Simplified)",
+  "Dutch",
+  "English",
+  "French",
+  "German",
+  "Hindi",
+  "Italian",
+  "Japanese",
+  "Korean",
+  "Polish",
+  "Portuguese",
+  "Russian",
+  "Spanish",
+  "Swedish",
+  "Turkish",
+  "Ukrainian",
 ];
 
 const CEFR_LEVELS = [
-  { value: 'A1', label: 'A1 – Beginner' },
-  { value: 'A2', label: 'A2 – Elementary' },
-  { value: 'B1', label: 'B1 – Intermediate' },
-  { value: 'B2', label: 'B2 – Upper Intermediate' },
-  { value: 'C1', label: 'C1 – Advanced' },
-  { value: 'C2', label: 'C2 – Mastery' },
+  { value: "A1", label: "A1 – Beginner" },
+  { value: "A2", label: "A2 – Elementary" },
+  { value: "B1", label: "B1 – Intermediate" },
+  { value: "B2", label: "B2 – Upper Intermediate" },
+  { value: "C1", label: "C1 – Advanced" },
+  { value: "C2", label: "C2 – Mastery" },
 ];
 
-export function ArticleDisplay({ article, onTranslateAndSummarize, onClear }: Props) {
-  const [targetLanguage, setTargetLanguage] = useState('');
-  const [cefrLevel, setCefrLevel] = useState('');
+export function ArticleDisplay({
+  article,
+  onTranslateAndSummarize,
+  onClear,
+}: Props) {
+  const [targetLanguage, setTargetLanguage] = useState("");
+  const [cefrLevel, setCefrLevel] = useState("");
 
   return (
     <div>
@@ -34,38 +52,56 @@ export function ArticleDisplay({ article, onTranslateAndSummarize, onClear }: Pr
         <div className="article-meta">
           <span className="article-meta-item">👤 {article.author}</span>
           <span className="article-meta-item">🌐 {article.siteName}</span>
-          <span className="article-meta-item">📝 {article.length.toLocaleString()} words</span>
+          <span className="article-meta-item">
+            📝 {article.length.toLocaleString()} words
+          </span>
         </div>
         <div className="article-excerpt">{article.excerpt}</div>
-        <a href={article.url} target="_blank" rel="noreferrer" className="article-url">
+        <a
+          href={article.url}
+          target="_blank"
+          rel="noreferrer"
+          className="article-url"
+        >
           {article.url}
         </a>
       </div>
 
       <div className="vocab-controls">
-        <select value={targetLanguage} onChange={(e) => setTargetLanguage(e.target.value)}>
+        <select
+          value={targetLanguage}
+          onChange={(e) => setTargetLanguage(e.target.value)}
+        >
           <option value="">Translate to...</option>
           {LANGUAGES.map((lang) => (
-            <option key={lang} value={lang}>{lang}</option>
+            <option key={lang} value={lang}>
+              {lang}
+            </option>
           ))}
         </select>
-        <select value={cefrLevel} onChange={(e) => setCefrLevel(e.target.value)}>
+        <select
+          value={cefrLevel}
+          onChange={(e) => setCefrLevel(e.target.value)}
+        >
           <option value="">CEFR Level...</option>
           {CEFR_LEVELS.map(({ value, label }) => (
-            <option key={value} value={value}>{label}</option>
+            <option key={value} value={value}>
+              {label}
+            </option>
           ))}
         </select>
       </div>
 
       <div className="button-group">
-        <button
-          className="btn-primary"
+        <Button
           onClick={() => onTranslateAndSummarize(targetLanguage, cefrLevel)}
           disabled={!targetLanguage || !cefrLevel}
         >
           ✨ Translate &amp; Summarize
-        </button>
-        <button className="btn-secondary" onClick={onClear}>🗑️ Clear</button>
+        </Button>
+        <Button variant="secondary" onClick={onClear}>
+          🗑️ Clear
+        </Button>
       </div>
     </div>
   );

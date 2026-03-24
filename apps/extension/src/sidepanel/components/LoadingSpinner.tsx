@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 const CYCLING_MESSAGES = [
-  'Please wait...',
-  'This can take a moment...',
-  'Almost there...',
-  'Good things take time...',
+  "Please wait...",
+  "This can take a moment...",
+  "Almost there...",
+  "Good things take time...",
 ];
 
 interface Props {

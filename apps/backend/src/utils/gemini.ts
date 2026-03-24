@@ -31,6 +31,7 @@ export async function callGeminiAPI(
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 8192,
+        thinkingConfig: { thinkingBudget: 0 },
         ...(jsonMode ? { responseMimeType: "application/json" } : {}),
       },
       safetySettings: [

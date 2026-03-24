@@ -6,6 +6,7 @@
   "scripts": {
     "build": "nx build extension",
     "serve": "nx serve backend",
+    "dev": "nx dev extension --skip-nx-cache & nx serve backend",
     "dev:extension": "nx dev extension",
     "dev:backend": "nx serve backend"
   },
