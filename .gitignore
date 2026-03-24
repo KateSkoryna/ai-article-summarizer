@@ -16,6 +16,7 @@ node_modules/
 # Chrome extension debugging
 *.pem
 *.crx
+*.zip
 
 # Editor files
 .vscode/
