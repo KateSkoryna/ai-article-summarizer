@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI Article Summarizer",
+  "name": "Lexentio",
   "version": "1.0.0",
-  "description": "Summarize web articles using Google Gemini AI and export to PDF format",
+  "description": "Summarize and translate web articles with AI, and enhance your language knowledge with vocabulary extraction and CEFR-level word lists.",
 
   "permissions": ["sidePanel", "storage", "activeTab", "scripting"],
 

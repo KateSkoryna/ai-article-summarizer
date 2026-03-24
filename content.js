@@ -84,4 +84,4 @@ function extractDomain(url) {
 }
 
 // Log that content script is loaded
-console.log("AI Article Summarizer: Content script loaded");
+console.log("Lexentio: Content script loaded");

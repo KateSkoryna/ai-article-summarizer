@@ -211,7 +211,7 @@ export function App() {
   return (
     <div className="container">
       <header>
-        <h1>AI Article Summarizer</h1>
+        <h1>Lexentio</h1>
       </header>
 
       {loading && <LoadingSpinner text={loadingText} />}

@@ -2,7 +2,7 @@
 // Handles side panel behavior
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("AI Article Summarizer extension installed");
+  console.log("Lexentio extension installed");
 
   // Configure side panel to open when extension icon is clicked
   chrome.sidePanel
