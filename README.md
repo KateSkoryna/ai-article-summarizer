@@ -44,7 +44,7 @@ Express Backend (apps/backend)
   - Rate limits: 20 req / 15 min per IP
   - Token validation via X-Extension-Token header
         ↓
-Google Gemini API  (gemini-2.0-flash)
+Google Gemini API  (gemini-2.5-flash)
 ```
 
 ### Stack
