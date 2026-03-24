@@ -211,7 +211,10 @@ export function App() {
   return (
     <div className="container">
       <header>
-        <h1>Lexentio</h1>
+        <div>
+          <h1>Lexentio</h1>
+          <p className="header-description">Your AI assistant to summarize, translate and expand your language skills</p>
+        </div>
       </header>
 
       {loading && <LoadingSpinner text={loadingText} />}
